@@ -19,6 +19,7 @@ cd teknomak-form
 ### 2. Bağımlılıkları Yükleme
 ```sh
 npm install
+npm install primereact primeicons
 ```
 ### 3. Projeyi Çalıştırma
 ```sh
