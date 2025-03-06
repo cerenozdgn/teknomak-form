@@ -74,7 +74,7 @@ const CommentModal: React.FC<CommentModalProps> = ({
         onRowSelect={(e) => onSelect(e.data)}
         paginator
         rows={5}
-        rowsPerPageOptions={[10, 25, 50, 100, 150, 200, 300, 400, 500]}
+        rowsPerPageOptions={[5,10,20]}
       >
         <Column field='id' header='ID' style={{ width: "10%" }} sortable />
         <Column field='name' header='Name' style={{ width: "20%" }} sortable />
