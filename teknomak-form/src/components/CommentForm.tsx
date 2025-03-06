@@ -1,106 +1,218 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as yup from "yup";
+import { useState, useEffect } from "react";
 import { InputText } from "primereact/inputtext";
 import { Button } from "primereact/button";
-import { Textarea } from "primereact/textarea";
-import { fetchCommentById } from "../api";
+import { InputTextarea } from "primereact/inputtextarea";
+import { Card } from "primereact/card";
 import CommentModal from "./CommentModal";
 import { Comment } from "../types/Index";
-
-// 📌 Form doğrulama şeması
-const schema = yup.object().shape({
-  id: yup.number().required("ID gerekli"),
-  name: yup.string().required("İsim gerekli"),
-  email: yup.string().email("Geçerli bir email girin").required("Email gerekli"),
-  body: yup.string().required("Body boş olamaz"),
-});
-
-// 📌 Tipleri düzgün eşleştiriyoruz
-interface FormData {
-  postId: number;
-  id: number;
-  name: string;
-  email: string;
-  body: string;
-}
+import { InputNumber } from "primereact/inputnumber";
 
 const CommentForm = () => {
+  const [formData, setFormData] = useState<Partial<Comment>>({ postId: 1 });
   const [modalVisible, setModalVisible] = useState(false);
-  const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
-    resolver: yupResolver(schema), // Schema'yı doğru şekilde kullanıyoruz
-    defaultValues: {
-      postId: 1, // readonly alanı olduğu için default olarak 1 alacak
-      id: 0,
-      name: "",
-      email: "",
-      body: "",
-    },
-  });
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [modalType, setModalType] = useState<"id" | "name" | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // 📌 ID Enter ile formu doldurma
-  const handleIdEnter = async (e: React.KeyboardEvent) => {
+  useEffect(() => {
+    const cachedComments = localStorage.getItem("comments");
+    if (cachedComments) {
+      setComments(JSON.parse(cachedComments));
+      setLoading(false);
+    } else {
+      fetch("https://jsonplaceholder.typicode.com/comments")
+        .then((res) => res.json())
+        .then((data) => {
+          setComments(data);
+          localStorage.setItem("comments", JSON.stringify(data));
+          setLoading(false);
+        });
+    }
+  }, []);
+
+  const handleIdEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      const id = Number(watch("id"));
-      if (id) {
-        const data = await fetchCommentById(id);
-        setValue("name", data.name);
-        setValue("email", data.email);
-        setValue("body", data.body);
+      const selected = comments.find((c) => c.id === Number(formData.id));
+      if (selected) {
+        setFormData(selected);
       }
     }
   };
 
-  const handleSelectComment = (comment: Comment) => {
-    setValue("id", comment.id);
-    setValue("name", comment.name);
-    setValue("email", comment.email);
-    setValue("body", comment.body);
-  };
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
-    <form onSubmit={handleSubmit((data) => console.log("Gönderilen Veri:", data))} className="p-4">
-      {/* Post ID (Readonly) */}
-      <div className="p-field">
-        <label>Post ID</label>
-        <InputText {...register("postId")} readOnly />
-      </div>
+    <div
+      className='p-d-flex p-jc-center p-ai-center'
+      style={{
+        display: "grid",
+        placeItems: "center",
+        minHeight: "100vh",
+        backgroundColor: "#f4f4f4",
+      }}
+    >
+      <Card
+        style={{
+          width: "40%",
+          marginLeft: "auto",
+          marginRight: "auto",
+          padding: "2rem",
+          borderRadius: "8px",
+          boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+        }}
+      >
+        {/* HEADER */}
+        <h2
+          style={{
+            textAlign: "center",
+            marginBottom: "1.5rem",
+            fontSize: "1.8rem",
+            fontWeight: "bold",
+            color: "#333",
+          }}
+        >
+          Teknomak Comments Form
+        </h2>
+        <div className='p-4'>
+          {/* Post ID */}
+          <div className='p-field p-mb-4'>
+            <label style={{ fontWeight: "bold", fontSize: "14px" }}>
+              Post ID
+            </label>
+            <InputNumber
+              value={formData.postId}
+              readOnly
+              style={{ width: "100%", height: "40px" }}
+            />
+          </div>
 
-      {/* ID Alanı + Modal Butonu */}
-      <div className="p-field">
-        <label>ID</label>
-        <div className="flex">
-          <InputText {...register("id")} onKeyDown={handleIdEnter} />
-          <Button label="Seç" onClick={() => setModalVisible(true)} />
+          {/* ID Input and Button */}
+          <div className='p-field p-mb-4 p-d-flex p-ai-center'>
+            <label
+              style={{
+                fontWeight: "bold",
+                fontSize: "14px",
+                width: "25%",
+                marginBottom: "8px",
+              }}
+            >
+              ID
+            </label>
+            <div
+              className='p-field p-mb-4'
+              style={{ display: "flex", alignItems: "center", gap: "8px" }}
+            >
+              <InputNumber
+                value={formData.id || null}
+                onChange={(e) =>
+                  setFormData({ ...formData, id: e.value || undefined })
+                }
+                onKeyDown={handleIdEnter}
+                style={{ width: "100%", height: "40px" }}
+              />
+              <Button
+                icon='pi pi-search'
+                severity='success'
+                onClick={() => {
+                  setModalVisible(true);
+                  setModalType("id");
+                }}
+                style={{ height: "40px", width: "20%" }}
+              />
+            </div>
+          </div>
+
+          {/* Name Input and Button */}
+          <div className='p-field p-mb-4 p-d-flex p-ai-center'>
+            <label
+              style={{
+                fontWeight: "bold",
+                fontSize: "14px",
+                width: "25%",
+                marginBottom: "8px",
+              }}
+            >
+              Name
+            </label>
+            <div
+              className='p-field p-mb-4'
+              style={{ display: "flex", alignItems: "center", gap: "8px" }}
+            >
+              <InputText
+                value={formData.name || ""}
+                readOnly
+                style={{ width: "100%", height: "40px" }}
+              />
+              <Button
+                icon='pi pi-search'
+                severity='success'
+                aria-label='Search'
+                onClick={() => {
+                  setModalVisible(true);
+                  setModalType("name");
+                }}
+                style={{ height: "40px", width: "20%" }}
+              />
+            </div>
+          </div>
+
+          {/* Email Input */}
+          <div className='p-field p-mb-4'>
+            <label style={{ fontWeight: "bold", fontSize: "14px" }}>
+              Email
+            </label>
+            <InputText
+              value={formData.email || ""}
+              readOnly
+              style={{ width: "100%", height: "40px" }}
+            />
+          </div>
+
+          {/* Body Input */}
+          <div className='p-field p-mb-4'>
+            <label style={{ fontWeight: "bold", fontSize: "14px" }}>Body</label>
+            <InputTextarea
+              autoResize
+              value={formData.body || ""}
+              readOnly
+              style={{ width: "100%", height: "80px" }}
+            />
+          </div>
+
+          {/* Conditionally render the CommentModal */}
+          {modalType && (
+            <CommentModal
+              visible={modalVisible}
+              comments={comments}
+              onClose={() => setModalVisible(false)}
+              onSelect={(comment) => {
+                if (modalType === "id") {
+                  setFormData({
+                    ...formData,
+                    postId: comment.postId,
+                    id: comment.id,
+                    name: "",
+                    email: "",
+                    body: "",
+                  });
+                } else if (modalType === "name") {
+                  setFormData({
+                    ...formData,
+                    name: comment.name,
+                    email: comment.email,
+                    body: "",
+                  });
+                }
+                setModalVisible(false);
+              }}
+              modalType={modalType}
+            />
+          )}
         </div>
-        {errors.id && <p className="error">{errors.id.message}</p>}
-      </div>
-
-      {/* Name Alanı (Modal ile Seçilebilir) */}
-      <div className="p-field">
-        <label>Name</label>
-        <InputText {...register("name")} readOnly />
-        {errors.name && <p className="error">{errors.name.message}</p>}
-      </div>
-
-      {/* Email Alanı (Otomatik Doldurulacak) */}
-      <div className="p-field">
-        <label>Email</label>
-        <InputText {...register("email")} readOnly />
-        {errors.email && <p className="error">{errors.email.message}</p>}
-      </div>
-
-      {/* Body Alanı (Otomatik Doldurulacak) */}
-      <div className="p-field">
-        <label>Body</label>
-        <Textarea {...register("body")} readOnly />
-        {errors.body && <p className="error">{errors.body.message}</p>}
-      </div>
-
-      <Button type="submit" label="Kaydet" />
-      <CommentModal visible={modalVisible} onHide={() => setModalVisible(false)} onSelect={handleSelectComment} />
-    </form>
+      </Card>
+    </div>
   );
 };
 

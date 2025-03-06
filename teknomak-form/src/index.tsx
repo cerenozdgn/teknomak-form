@@ -3,6 +3,10 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 import reportWebVitals from './reportWebVitals';
+import "primereact/resources/themes/lara-light-blue/theme.css"; // Tema dosyası
+import "primereact/resources/primereact.min.css"; // Bileşenler için gerekli CSS
+import "primeicons/primeicons.css"; // Buton ikonları için
+
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
